@@ -1,0 +1,27 @@
+{
+	"version": "1.0",
+	"entries": [
+		{
+			"type": "visit-time",
+			"amount": 3,
+			"timeframe": 60,
+			"__comment__": "3 sat per 60 seconds",
+			"id": 1
+		},
+		{
+			"type": "one-time",
+			"amount": 1000,
+			"id": 2
+		},
+		{
+			"type": "custom",
+			"name": "Post a comment",
+			"amount": 300,
+			"id": 3
+		}
+	],
+	"api": {
+		"checkout": "https://example.com/ln-checkout",
+		"__comment__": "sends a post request to this url to generate payment hash"
+	}
+}
