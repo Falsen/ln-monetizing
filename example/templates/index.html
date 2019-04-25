@@ -1,0 +1,43 @@
+<html>
+	<head>
+		<link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.5/css/bootstrap.min.css">
+		<link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.5/css/bootstrap-theme.min.css">
+
+		<script src="{{ url_for('static', filename='jquery.js') }}"></script>
+		<script src="{{ url_for('static', filename='utils.js') }}"></script>
+
+		<script>
+			var ln_user_token = "{{ token == None }}" == "True";
+		</script>
+		<script src="{{ url_for('static', filename='ln-monetize.js') }}"></script>
+		<script src="{{ url_for('static', filename='qrcode.min.js') }}"></script>
+
+	</head>
+
+	<body>
+
+		<div class="container">
+			<div class="row">
+				<div class="col-xs-12">
+
+					<h2>Lightning Network Monitizing</h2>
+
+					{% if token == None %}
+						<div style="background:red;width:50%;height:100px;">
+							Very big ad-sign
+						</div>
+					{% endif %}
+
+					<p>
+						Monitize your lightning network site using the LN network. Allow users to pay for ad-free access to your site.<br>
+						<a href="https://github.com/Falsen/ln-monetizing" target="_blank">Github</a>
+					</p>
+
+				</div>
+			</div>
+		</div>
+
+
+	</body>
+
+</html>

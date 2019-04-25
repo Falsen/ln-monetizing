@@ -1,10 +1,11 @@
+var jsonData = null;
 
 function show_modal(data){
 	var item = $(document.createElement("div"));
-	item.html("<center><b>LN Monitize</B></center>");
+	item.html("<center><b>LN Monetize</B></center>");
 
 	var main = $(document.createElement("div"));
-	main.html("Pay <b id='ln_payamount'>" + data.amount + "</b> sat per <b id='ln_timeframe'>" + data.timeframe + "</b> seconds of ad-free experience?");
+	main.html("Pay <b id='ln_payamount'>" + data.amount + "</b> sat for <b id='ln_timeframe'>" + time_since(data.timeframe) + "</b> of an ad-free experience?");
 	main.css("text-align", "center").css("margin-top","10px")
 
 	//
@@ -25,24 +26,56 @@ function show_modal(data){
 		var mp = steps[i];
 		var btn1 = $(document.createElement("option"));
 		btn1.val(i);
-		btn1.text( mp*data.amount + " sats - " + data.timeframe * mp + " secs");
+
+		var length = time_since(data.timeframe * mp);
+		btn1.text( mp*data.amount + " sats - " + length);
 
 		select.append(btn1);
 	}
 
+	var multiplier = 1;
+
 	select.on("change", function(evt){
 		var mp = steps[$(this).val()];
-
+		multiplier = mp;
 
 		$("#ln_payamount").html( mp*data.amount )
-		$("#ln_timeframe").html( mp*data.timeframe )
+		$("#ln_timeframe").html( time_since(mp*data.timeframe) )
 	});
+
+	var qrcode = $(document.createElement("canvas"));
+	qrcode.attr("id", "ln_qrcode");
 
 	var buy = $(document.createElement("button"));
 	buy.text("Buy");
 
+	buy.click(function(){
+		var url = jsonData.api.checkout;
+
+		$.post(url, {id: data.id, amount: multiplier}, function(data){
+			var json = JSON.parse(data);
+			item.height("auto");
+			var qr = new QRious({element: document.getElementById("ln_qrcode"),value: json.invoice, 'size': 250});
+
+			setTimeout(function(){
+				setInterval(function(){
+					$.get(jsonData.api.status, {"invoice": json.invoice_id},function(statusData){
+						var status = JSON.parse(statusData);
+
+						if(status.paid){
+							window.location.href="?token=" + json.invoice_id;
+						}
+					});
+				},3500);
+
+			},5000);
+		});
+	});
+
 	btns.append(select);
 	btns.append(buy);
+
+	btns.append(qrcode);
 
 	btns.css("text-align", "center")
 
@@ -53,7 +86,7 @@ function show_modal(data){
 		.css("border", "5px solid black")
 		.css("border-radius", "10px")
 		.width(300)
-		.height(100)
+		.height(120)
 		.css("right","-500px")
 		.css("top","10px")
 		.animate({
@@ -64,7 +97,9 @@ function show_modal(data){
 }
 
 $(document).ready(function(){
-	$.get("ln-monetize.json", {}, function(data){
+	if(!ln_user_token)return;
+	$.get("/static/ln-monetize.json", {}, function(data){
+		jsonData = data;
 
 		for(var i=0;i<data.entries.length;i++){
 			var entry = data.entries[i];
