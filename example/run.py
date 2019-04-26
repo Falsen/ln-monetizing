@@ -1,7 +1,11 @@
-import json, requests, time
+import json, requests, time, sys
 import os,binascii
 
 from flask import Flask, render_template, request, redirect
+
+if len(sys.argv) < 2:
+	print("Please specify host address")
+	sys.exit(0)
 
 data = json.loads( open("static/ln-monetize.json").read() )
 apikey = open("apikey").read().split("\n")[0]
@@ -145,4 +149,4 @@ def status():
 
 	return json.dumps(obj)
 
-app.run(debug=True, port=7000, host="127.0.0.1", threaded=True)
+app.run(debug=True, port=7500, host=sys.argv[1], threaded=True)
