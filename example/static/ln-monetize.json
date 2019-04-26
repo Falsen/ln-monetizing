@@ -6,6 +6,8 @@
 			"amount": 3,
 			"timeframe": 60,
 			"name": "Ad-free experience",
+			"description": "Pay <b id='ln_payamount'>{amount}</b> sat for <b id='ln_timeframe'>{timeframe}</b> of an ad-free experience?!",
+			"choices": [1, 3, 5, 10, 30, 60],
 			"__comment__": "3 sat per 60 seconds",
 			"id": 1
 		},
@@ -17,7 +19,9 @@
 		{
 			"type": "custom",
 			"name": "Post a comment",
-			"amount": 300,
+			"description": "Post a comment, for 100 sat",
+			"choices": [],
+			"amount": 100,
 			"id": 3
 		}
 	],

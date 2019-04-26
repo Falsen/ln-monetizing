@@ -3,11 +3,30 @@ import os,binascii
 
 from flask import Flask, render_template, request, redirect
 
-
 data = json.loads( open("static/ln-monetize.json").read() )
 apikey = open("apikey").read().split("\n")[0]
 
 keys = {}
+comments = []
+
+comments.append({'text': 'Hello everyone', 'time': 0})
+
+try:
+	f = open("db.json")
+	j = json.loads(f.read())
+	keys = j['keys']
+	comments = j['comments']
+	f.close()
+except Exception as e:
+	try:
+		f.close()
+	except Exception as e:
+		pass
+
+def updateDb():
+	f = open("db.json","w+")
+	f.write(json.dumps({'comments': comments, 'keys': keys}))
+	f.close()
 
 def checkInvoice(payreq):
 	global apikey
@@ -51,12 +70,13 @@ def main():
 	else:
 		token = None
 
-	return render_template("index.html", token=token, token_data=data, now=time.time())
+	return render_template("index.html", token=token, token_data=data, now=time.time(), comments=comments)
 
 @app.route("/checkout", methods=["POST"])
 def checkout():
 	id = request.form.get("id")
 	count = request.form.get("amount")
+	json_data = json.loads( request.form.get("data"))
 
 	this_entry = None
 	for entry in data["entries"]:
@@ -74,8 +94,18 @@ def checkout():
 	payreq = invoice['data']['lightning_invoice']['payreq']
 	id = invoice['data']['id']
 
-	expire = int(this_entry['timeframe']) * int(count)
-	keys[id] = { "count": int(count), "length": expire, "expire": None }
+	if this_entry["type"] == "visit-time":
+		expire = int(this_entry['timeframe']) * int(count)
+		keys[id] = { "count": int(count), "length": expire, "expire": None }
+		updateDb()
+	elif this_entry["id"] == 3:
+		keys[id] = { "text": json_data['text'], "time": int(time.time())}
+		updateDb()
+	else:
+		keys[id] = {}
+
+	keys[id]['id'] = this_entry['id']
+	keys[id]['type'] = this_entry['type']
 
 	obj = { "success": True, "invoice": payreq, "invoice_id": id, "token": token }
 	return json.dumps(obj)
@@ -97,10 +127,22 @@ def status():
 
 	paid = (status == "paid")
 
-	if paid:
-		keys[id]['expire'] = int(time.time()) + keys[id]['length']
+	key = keys[id]
 
-	obj = { "success": True, "paid": paid, "expire": keys[id]['expire'] }
+	obj = { "success": True, "paid": paid, "id": key["id"], "type": key["type"] }
+
+	if paid:
+		if key['id'] == 1:
+			obj['expire'] = keys[id]['expire']
+			keys[id]['expire'] = int(time.time()) + keys[id]['length']
+			updateDb()
+
+		elif key['id'] == 3:
+			comments.append({"text": key['text'], "time": key['time']})
+			updateDb()
+
+
+
 	return json.dumps(obj)
 
 app.run(debug=True, port=7000, host="127.0.0.1", threaded=True)

@@ -2,10 +2,10 @@ var jsonData = null;
 
 function show_modal(data){
 	var item = $(document.createElement("div"));
-	item.html("<center><b>LN Monetize</B></center>");
+	item.html("<center><b>" + data.name + "</B></center>");
 
 	var main = $(document.createElement("div"));
-	main.html("Pay <b id='ln_payamount'>" + data.amount + "</b> sat for <b id='ln_timeframe'>" + time_since(data.timeframe) + "</b> of an ad-free experience?");
+	main.html( data.description.replace("{amount}", data.amount).replace("{timeframe}", time_since(data.timeframe)));
 	main.css("text-align", "center").css("margin-top","10px")
 
 	//
@@ -19,29 +19,30 @@ function show_modal(data){
 
 	var btns = $(document.createElement("div"));
 
-	var select = $(document.createElement("select"));
-
-	var steps = [1, 3, 5, 10, 30, 60];
-	for(var i in steps){
-		var mp = steps[i];
-		var btn1 = $(document.createElement("option"));
-		btn1.val(i);
-
-		var length = time_since(data.timeframe * mp);
-		btn1.text( mp*data.amount + " sats - " + length);
-
-		select.append(btn1);
-	}
-
 	var multiplier = 1;
+	if(data.choices && data.choices.length > 0){
+		var select = $(document.createElement("select"));
 
-	select.on("change", function(evt){
-		var mp = steps[$(this).val()];
-		multiplier = mp;
+		var steps = data.choices;
+		for(var i in steps){
+			var mp = steps[i];
+			var btn1 = $(document.createElement("option"));
+			btn1.val(i);
 
-		$("#ln_payamount").html( mp*data.amount )
-		$("#ln_timeframe").html( time_since(mp*data.timeframe) )
-	});
+			var length = time_since(data.timeframe * mp);
+			btn1.text( mp*data.amount + " sats - " + length);
+
+			select.append(btn1);
+		}
+
+		select.on("change", function(evt){
+			var mp = steps[$(this).val()];
+			multiplier = mp;
+
+			$("#ln_payamount").html( mp*data.amount )
+			$("#ln_timeframe").html( time_since(mp*data.timeframe) )
+		});
+	}
 
 	var qrcode = $(document.createElement("canvas"));
 	qrcode.attr("id", "ln_qrcode");
@@ -52,7 +53,7 @@ function show_modal(data){
 	buy.click(function(){
 		var url = jsonData.api.checkout;
 
-		$.post(url, {id: data.id, amount: multiplier}, function(data){
+		$.post(url, {id: data.id, amount: multiplier, data: JSON.stringify(data.data||{}) }, function(data){
 			var json = JSON.parse(data);
 			item.height("auto");
 			var qr = new QRious({element: document.getElementById("ln_qrcode"),value: json.invoice, 'size': 250});
@@ -63,7 +64,11 @@ function show_modal(data){
 						var status = JSON.parse(statusData);
 
 						if(status.paid){
-							window.location.href="?token=" + json.invoice_id;
+							if(status.type == "visit-time"){
+								window.location.href="?token=" + json.invoice_id;
+							}else if(status.id == 3){
+								window.location.reload();
+							}
 						}
 					});
 				},3500);
@@ -72,7 +77,7 @@ function show_modal(data){
 		});
 	});
 
-	btns.append(select);
+	if(select) btns.append(select);
 	btns.append(buy);
 
 	btns.append(qrcode);
@@ -97,10 +102,10 @@ function show_modal(data){
 }
 
 $(document).ready(function(){
-	if(!ln_user_token)return;
+
 	$.get("/static/ln-monetize.json", {}, function(data){
 		jsonData = data;
-
+		if(!ln_user_token)return;
 		for(var i=0;i<data.entries.length;i++){
 			var entry = data.entries[i];
 
@@ -109,5 +114,15 @@ $(document).ready(function(){
 			}
 		}
 
+	});
+
+	$(".comment").click(function(){
+		var text = $("#comment_text").val();
+
+		var entry = jsonData.entries.find(x => x.id == 3);
+
+		entry.data = {text: text};
+
+		show_modal(entry);
 	});
 });
